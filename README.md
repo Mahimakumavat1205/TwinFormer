@@ -6,11 +6,11 @@
 **TwinFormer** is a hierarchical Transformer architecture designed for efficient and accurate Long-Sequence Time-Series Forecasting (LSTSF). It addresses the quadratic complexity limitations of vanilla Transformers by introducing a dual-level processing mechanism that captures both fine-grained local dynamics and long-range global dependencies with linear complexity $O(kLd)$.
 
 > **Paper Title:** TwinFormer: A Dual-Level Transformer for Long-Sequence Time-Series Forecasting  
-> **Authors:** Mahima Kumavat & Aditya Maheshwari (IIM Indore)
+> **Authors:** Mahima Kumavat & Aditya Maheshwari (Indian Institute of Management Indore)
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 * **Hierarchical Architecture:** Processes data in two stages:
     1.  **Local Informer:** Models intra-patch dynamics using Top-k Sparse Attention.
@@ -22,7 +22,7 @@
 
 ---
 
-## 🏗️ Model Architecture
+## Model Architecture
 
 The TwinFormer conceptually treats time series data as a hierarchy of patches.
 
@@ -34,19 +34,26 @@ The TwinFormer conceptually treats time series data as a hierarchy of patches.
 
 ---
 
-## 📂 Directory Structure
+## Directory Structure
 
 To run the code successfully, ensure your project directory is structured as follows. The code expects datasets to be in a `../Data/` folder relative to the script.
 
 ```text
 TwinFormer/
-├── Data/                     # Place your CSV files here
+├── Data/            
 │   ├── temperatures.csv
 │   ├── powerconsumption.csv
 │   ├── weather_utf8.csv
 │   ├── Electricity_load.csv
+│   ├── powerconsumption.csv
+│   ├── ETTh1.csv
+│   ├── ETTm1.csv
+│   ├── ETTh2.csv
+│   ├── ETTm2.csv
+│   ├── ILINet.csv
 │   └── IDEA.csv
-├── src/
+│
+├── scripts/
 │   └── main.py               # The provided training script
 ├── README.md
 └── requirements.txt
@@ -54,7 +61,7 @@ TwinFormer/
 
 ---
 
-## 🛠️ Installation
+## Installation
 
 1.  **Clone the repository:**
     ```bash
@@ -69,7 +76,7 @@ TwinFormer/
 
 ---
 
-## 📊 Datasets
+## Datasets
 
 This implementation includes loaders and preprocessing for the following domains:
 
@@ -85,7 +92,7 @@ This implementation includes loaders and preprocessing for the following domains
 
 ---
 
-## 🏃‍♂️ Usage
+## Usage
 
 The main script runs experiments sequentially for different domains and prediction lengths. You can run the entire suite using:
 
@@ -99,26 +106,11 @@ The default configuration uses the settings described in the paper:
 * **Prediction Lengths (`PRED_LEN`):** [96, 120, 336, 720]
 * **Patch Size:** 6
 * **Embedding Dimension:** 32 (variable per dataset)
-* **Top-k:** 4 or 5
+* **Top-k:** 5
 
 ---
 
-## 📈 Results
-
-TwinFormer generates plots comparing Ground Truth vs. Predictions for every valid experiment. These will be saved as `.png` files in your working directory (e.g., `temperature_forecast96.png`).
-
-**Performance Highlights (MAE):**
-
-| Horizon | Temperature | Power Cons. | Weather |
-| :--- | :--- | :--- | :--- |
-| **96** | 0.5486 | 1522.36 | 20.46 |
-| **120** | 0.5865 | 1628.08 | 22.00 |
-| **336** | 0.5705 | 1691.23 | 23.24 |
-| **720** | 1.2649 | 1687.79 | 22.28 |
-
----
-
-## 📜 Citation
+## Citation
 
 If you use this code or model in your research, please cite the original paper:
 
@@ -126,11 +118,8 @@ If you use this code or model in your research, please cite the original paper:
 @article{Kumavat2024TwinFormer,
   title={TwinFormer: A Dual-Level Transformer for Long-Sequence Time-Series Forecasting},
   author={Kumavat, Mahima and Maheshwari, Aditya},
-  journal={Indian Institute of Management Indore},
-  year={2024}
+  journal={},
+  year={2025},
+  url = {}
 }
 ```
-
-## 📄 License
-
-This project is open-sourced under the MIT License.
