@@ -238,7 +238,7 @@ if valid_lengths:
     plt.savefig(f"temperature_forecast {PRED_LEN}.png")
     print(f"\nPlot saved as 'temperature_forecast{PRED_LEN}.png'")
 
-# POWER CONSUMPTION
+
 import pandas as pd
 import numpy as np
 import torch
@@ -250,8 +250,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader, TensorDataset
 
-
-df = pd.read_csv("../Data/powerconsumption.csv")
+df = pd.read_csv("powerconsumption.csv")
 df.dropna(inplace=True)
 
 print("\nAvailable columns:")
@@ -265,9 +264,13 @@ possible_features = [
 features = [col for col in possible_features if col in df.columns]
 
 if len(features) == 0:
-    raise ValueError("Please check column names.")
+    raise ValueError("No feature columns found in CSV. Please check column names.")
 
 print("\nUsing features:", features)
+
+target_col = 'PowerConsumption_Zone1'
+if target_col not in df.columns:
+    raise KeyError(f"Target column '{target_col}' not found in CSV.")
 
 X_raw = df[features].values
 y_raw = df[[target_col]].values
@@ -332,7 +335,7 @@ class SparseInformerBlock(nn.Module):
         return x
 
 
-class Twinformer(nn.Module):
+class I3Informer(nn.Module):
     def __init__(self, input_dim, embed_dim=32, patch_size=6, pred_len=96, topk=5):
         super().__init__()
         self.embed = nn.Linear(input_dim, embed_dim)
@@ -358,35 +361,31 @@ class Twinformer(nn.Module):
         _, h = self.rnn(x)
 
         return self.fc(h.squeeze(0))
+    SEQ_LEN = 48
+    PRED_LENS = [96, 120, 336, 720]
+    EPOCHS = 20
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
-SEQ_LEN = 48
-PRED_LENS = [96, 120, 336, 720]
-EPOCHS = 20
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-results = {}
+    results = {}
 
 for pred_len in PRED_LENS:
     print(f"\n{'='*60}")
     print(f"Training with SEQ_LEN={SEQ_LEN}, PRED_LEN={pred_len}")
     print(f"{'='*60}")
-
-
+    
     X_seq, y_seq = create_sequences(X_scaled, y_scaled, SEQ_LEN, pred_len)
-
+    
     X_tensor = torch.tensor(X_seq, dtype=torch.float32)
     y_tensor = torch.tensor(y_seq, dtype=torch.float32).squeeze(-1)
-
+    
     dataset = TensorDataset(X_tensor, y_tensor)
     loader = DataLoader(dataset, batch_size=32, shuffle=True)
-
-
-    model = Twinformer(input_dim=len(features), pred_len=pred_len).to(DEVICE)
+    
+    model = I3Informer(input_dim=len(features), pred_len=pred_len).to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.MSELoss()
-
-
+    
+ 
     for epoch in range(EPOCHS):
         model.train()
         total_loss = 0
@@ -399,41 +398,42 @@ for pred_len in PRED_LENS:
             optimizer.step()
             total_loss += loss.item()
         print(f"Epoch {epoch+1}/{EPOCHS} - Loss: {total_loss/len(loader):.5f}")
+    
 
     model.eval()
     y_true, y_pred = [], []
-
+    
     with torch.no_grad():
         for xb, yb in loader:
             pred = model(xb.to(DEVICE)).cpu().numpy()
             y_true.extend(yb.numpy())
             y_pred.extend(pred)
-
+    
     y_true = np.array(y_true).reshape(-1, 1)
     y_pred = np.array(y_pred).reshape(-1, 1)
-
+    
     y_true_inv = y_scaler.inverse_transform(y_true)
     y_pred_inv = y_scaler.inverse_transform(y_pred)
-
+    
     mae = mean_absolute_error(y_true_inv, y_pred_inv)
     rmse = np.sqrt(mean_squared_error(y_true_inv, y_pred_inv))
     r2 = r2_score(y_true_inv, y_pred_inv)
-
+    
     results[pred_len] = {'MAE': mae, 'RMSE': rmse, 'R2': r2}
-
+    
     print(f"\nResults for PRED_LEN={pred_len}:")
     print(f"  MAE  : {mae:.4f}")
     print(f"  RMSE : {rmse:.4f}")
     print(f"  R²   : {r2:.4f}")
 
-
     model.eval()
-
+    
     test_seq_len = SEQ_LEN
     total_needed = test_seq_len + pred_len
     if len(X_scaled) < total_needed:
-        print(f"Skipping plot for pred_len={pred_len}: not enough data.")
+        print(f"⚠️ Skipping plot for pred_len={pred_len}: not enough data.")
     else:
+
         start_idx = len(X_scaled) - total_needed
         X_plot = X_scaled[start_idx:start_idx + test_seq_len].reshape(1, test_seq_len, -1)
         y_plot_true = y_scaled[start_idx + test_seq_len:start_idx + total_needed]
@@ -442,11 +442,11 @@ for pred_len in PRED_LENS:
         with torch.no_grad():
             y_plot_pred_scaled = model(X_plot_tensor).cpu().numpy().reshape(-1, 1)
 
-
+    
         y_plot_true_inv = y_scaler.inverse_transform(y_plot_true)
         y_plot_pred_inv = y_scaler.inverse_transform(y_plot_pred_scaled)
 
-
+    
         plt.figure(figsize=(14, 6))
         time_true = np.arange(test_seq_len, test_seq_len + pred_len)
         time_context = np.arange(test_seq_len)
@@ -463,9 +463,9 @@ for pred_len in PRED_LENS:
         plt.legend()
         plt.grid(True, linestyle='--', alpha=0.5)
         plt.tight_layout()
-        plt.savefig(f"Power Consumption{pred_len}.png", dpi=150)
+        plt.savefig(f"forecast_predlen_{pred_len}.png", dpi=150)
         plt.close()
-print(f"Forecast plot saved: Power Consumption {pred_len}.png")
+print(f"Forecast plot saved: forecast_predlen_{pred_len}.png")
 
 print(f"\n{'='*60}")
 print("SUMMARY RESULTS - All Prediction Lengths")
